@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VertiCadastre — 3D ULPIN Mini Demo</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="cesiumContainer"></div>
+
+    <header id="titleBar">
+      <h1>VertiCadastre</h1>
+      <p>3D ULPIN Mini Demo &middot; Base ULPIN KA-BLR-00042</p>
+      <p id="buildingBadge" class="hidden"></p>
+    </header>
+
+    <div id="searchBar">
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="Search unit ULPIN, e.g. KA-BLR-00042-F03-U02"
+        autocomplete="off"
+      />
+      <button id="searchBtn">Search</button>
+      <div id="searchStatus"></div>
+    </div>
+
+    <div id="toolsBar">
+      <button id="registryBtn" title="Registry table">Registry</button>
+      <button id="dashboardBtn" title="Analytics dashboard">Dashboard</button>
+      <button id="guideBtn" title="How 3D ULPIN works">ULPIN Guide</button>
+    </div>
+
+    <div id="infoPanel" class="hidden">
+      <button id="infoPanelClose" aria-label="Close">&times;</button>
+      <h2 id="infoUlpin"></h2>
+      <span id="infoStatusBadge" class="status-badge"></span>
+      <dl>
+        <dt>Floor</dt>
+        <dd id="infoFloor"></dd>
+        <dt>Unit</dt>
+        <dd id="infoUnit"></dd>
+        <dt>Owner</dt>
+        <dd id="infoOwner"></dd>
+        <dt>Purchase date</dt>
+        <dd id="infoPurchaseDate"></dd>
+        <dt>Footprint</dt>
+        <dd id="infoGeometrySource"></dd>
+        <dt>Owner record</dt>
+        <dd id="infoSource"></dd>
+      </dl>
+      <button id="certBtn">View Certificate</button>
+    </div>
+
+    <div id="statusLegend">
+      <span class="legend-title">Status</span>
+      <div><span class="legend-dot" style="background:#22c55e"></span>Registered</div>
+      <div><span class="legend-dot" style="background:#f59e0b"></span>Pending Verification</div>
+      <div><span class="legend-dot" style="background:#ef4444"></span>Disputed / Encumbered</div>
+      <div><span class="legend-dot" style="background:#94a3b8"></span>Vacant / Available</div>
+    </div>
+
+    <div id="conflictPanel">
+      <button id="conflictBtn">Simulate competing claim</button>
+      <div id="conflictMessage" class="hidden"></div>
+    </div>
+
+    <!-- Registry table modal -->
+    <div id="registryModal" class="modal-overlay hidden">
+      <div class="modal-card modal-wide">
+        <div class="modal-header">
+          <h2>Colony Property Registry</h2>
+          <button id="registryModalClose" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="registry-toolbar">
+            <input type="text" id="registryFilterInput" placeholder="Filter by ULPIN or owner..." />
+            <button id="registryExportBtn">Export CSV</button>
+          </div>
+          <div class="registry-table-wrap">
+            <table id="registryTable">
+              <thead>
+                <tr>
+                  <th>ULPIN</th>
+                  <th>Floor</th>
+                  <th>Unit</th>
+                  <th>Owner</th>
+                  <th>Purchase Date</th>
+                  <th>Status</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody id="registryTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics dashboard modal -->
+    <div id="dashboardModal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Cadastre Analytics</h2>
+          <button id="dashboardModalClose" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <span class="kpi-label">Total Units</span>
+              <span class="kpi-value" id="statTotalUnits">-</span>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Floors</span>
+              <span class="kpi-value" id="statTotalFloors">-</span>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Units / Floor</span>
+              <span class="kpi-value" id="statUnitsPerFloor">-</span>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Unique Owners</span>
+              <span class="kpi-value" id="statUniqueOwners">-</span>
+            </div>
+            <div class="kpi-card kpi-card-alert">
+              <span class="kpi-label">Conflicts Detected (session)</span>
+              <span class="kpi-value" id="statConflictsDetected">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Certificate + QR modal -->
+    <div id="certificateModal" class="modal-overlay hidden">
+      <div class="modal-card certificate-card">
+        <div class="modal-header no-print">
+          <h2>3D ULPIN Property Certificate</h2>
+          <button id="certificateModalClose" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body certificate-body">
+          <div class="certificate-title">VertiCadastre &middot; 3D Property Certificate</div>
+          <div class="certificate-ulpin" id="certUlpin"></div>
+          <dl class="certificate-details">
+            <dt>Location</dt>
+            <dd id="certFloorUnit"></dd>
+            <dt>Owner</dt>
+            <dd id="certOwner"></dd>
+            <dt>Purchase date</dt>
+            <dd id="certPurchaseDate"></dd>
+            <dt>Status</dt>
+            <dd id="certStatus"></dd>
+            <dt>Footprint source</dt>
+            <dd id="certGeometrySource"></dd>
+          </dl>
+          <canvas id="certQrCanvas"></canvas>
+          <p class="certificate-disclaimer">Demo certificate for SIH 2026 PS 26011 selection round. Not a legal document.</p>
+        </div>
+        <div class="modal-footer no-print">
+          <button id="certPrintBtn">Print / Save PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ULPIN guide modal -->
+    <div id="guideModal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>How the 3D ULPIN Works</h2>
+          <button id="guideModalClose" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>
+            A standard 2D ULPIN identifies a ground survey plot. Our 3D ULPIN extends it with a
+            floor and unit suffix, so every flat/unit in a multi-storey building gets its own
+            unique, linked identifier.
+          </p>
+          <div class="ulpin-breakdown">
+            <span class="ulpin-segment ulpin-seg-base">KA-BLR-00042</span>-<span
+              class="ulpin-segment ulpin-seg-floor">F05</span>-<span
+              class="ulpin-segment ulpin-seg-unit">U03</span>
+          </div>
+          <div class="ulpin-legend">
+            <div><span class="ulpin-swatch ulpin-seg-base"></span> Base ULPIN &mdash; state, district, survey plot (unchanged from 2D cadastre)</div>
+            <div><span class="ulpin-swatch ulpin-seg-floor"></span> Floor &mdash; F01-F05, ground up</div>
+            <div><span class="ulpin-swatch ulpin-seg-unit"></span> Unit &mdash; U01-U04 within that floor</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

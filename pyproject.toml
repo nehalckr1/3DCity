@@ -1,0 +1,15 @@
+[project]
+name = "3dcity"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "geoalchemy2>=0.20.0",
+    "geopandas>=1.1.4",
+    "osmnx>=2.1.1",
+    "psycopg2-binary>=2.9.12",
+    "rasterio>=1.5.1",
+    "shapely>=2.1.2",
+    "sqlalchemy>=2.0.52",
+]
